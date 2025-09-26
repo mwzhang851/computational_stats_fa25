@@ -1,0 +1,187 @@
+---
+title: "MATH 154 - HW3 - Mapping"
+subtitle: "due on Wednesday, Sep 17, 2025"
+author: "Wendy Zhang"
+format: pdf
+execute:
+  warning: false
+  message: false
+---
+
+```{r}
+#| echo: false
+library(tidyverse)
+library(nycflights13)
+library(mosaicData)
+library(Lahman)
+library(ggrepel)
+```
+
+
+# Introduction
+
+In this assignment we practice working with `map()` to iterate through functions of interest.
+
+Note:  the function `n()` counts the number of rows.  It is a great function to know!
+
+### Question 1
+
+Write code that uses one of the map functions to:
+
+a. Compute the mean of every column in `mtcars` (a dataset in R, type `?mtcars` to learn more).
+```{r}
+map_dbl(.x = mtcars, .f = ~ mean(.x, na.rm = T))
+```
+
+b. Determine the type of each column in `flights` (a dataset in the R package **nycflights13**).  You might want to use the function `typeof()`.
+```{r}
+library(nycflights13)
+map_chr(.x = flights, .f = ~ typeof(.x))
+```
+
+c. Compute the number of unique values in each column of `iris` (a dataset in R, type `?iris` to learn more). You might want to use the function `n_distinct()`.
+```{r}
+map_dbl(.x = iris, .f = ~ n_distinct(.x))
+```
+
+d. Generate 10 random normals each from distributions with means of -10, 0, 10, and 100.
+```{r}
+set.seed(47)
+mean <- c(-10, 0, 10, 100)
+map(.x = mean, .f = ~ rnorm(10, mean = mean))
+```
+
+e. Generate 10 random normals each from distributions with means of -10, 0, 10, and 100 and corresponding standard deviations of 1, 3, 2, 5.
+```{r}
+set.seed(47)
+means <- c(-10, 0, 10, 100)
+sd <- c(1,3,2,5)
+map2(.x = means, .y = sd, ~ rnorm(10, mean = .x, sd = sd))
+```
+
+
+
+### Question 2
+
+
+Suppose you want to visit airports in Boston (`BOS`), San Francisco (`SFO`), Chicago (`ORD`, `MDW`), and Los Angeles (`LAX`). Use the `flights` data in **nycflights13**. 
+
+a. Write a function, called `delay_function`, that takes in the 3 digit airport code for a single airport and outputs a data frame where one column is the `ave_delay` (average arrival delay for each airport) and the other column is `code`. [Hint: the output of a data verb is a data frame.]
+```{r}
+delay_function <- function(airport) {
+  flights |> filter(dest == airport) |>
+    group_by(dest) |>
+    summarise(ave_delay = mean(arr_delay,na.rm=T)) |>
+    rename(code = dest)
+}
+```
+
+b. Run your function once on LAX.  That is, run this code:  `delay_function("LAX")`
+```{r}
+delay_function("LAX")
+```
+
+c. `map()` your function over the airports of interest, use `list_rbind()` so that the output is a data frame, sort by the largest arrival delay at the top.
+```{r}
+airport <- c("BOS","LAX","ORD","MDM","SFO")
+map(.x = airport, .f = delay_function) |> list_rbind()
+```
+
+
+
+### Question 3
+
+Consider the example from class where we were interested in bias, variance, and mean squared error for a set of models with a particular data generation method.
+In the interest of keeping the assignment manageable, we are going to measure only MSE on one data generating model (quadratic model) against one type of fitted model (linear model).
+
+Recall: MSE = $E[ (Y - \hat{f}(x))^2]$
+
+
+a. Write a function (called `my_preds`) that will find the predicted values given a linear model. 
+
+* The arguments to the function should be `ex` and `why`.
+* Use the linear model function `lm()`. To get the predictions, you can you use `lm(why ~ ex)$fitted`.
+
+After you write the function, run it one time: `my_preds(runif(10), runif(10)))`.  The output should be a vector of 10 predicted values, all right around 0.5 or 0.6.
+
+```{r}
+my_preds <- function(ex, why){
+  lm(why ~ ex)$fitted
+}
+
+x <- my_preds(runif(10), runif(10))
+x
+```
+
+
+b. Write a function (called `data_gen_pred`) that generates a dataset and the linear model predictions:
+
+* It should have two arguments: the first argument is `rep = 1` and the second argument is `n`, the number of observations. 
+* `ex` is distributed normally with a mean of 5 and a standard deviation of 3 (use the function `rnorm()`).
+* `why` is the sum of 2*`ex`^2 + 5 and some random noise (mean of 0 standard deviation of 15).
+* `preds` is the output of the previous function applied to your newly generated data.
+* the output should be a data frame with 25 rows and 4 columns (named `ex` and `why` and `preds` and `rep`).  (If you generate `ex` and `why` as vectors first, you could have the last line of your function be: `tibble(ex, why, preds, rep)`).
+
+After you write the function, run it one time (`data_gen_pred(n = 25)`). Your output should be a 25x4 data frame.
+
+```{r}
+set.seed(47)
+data_gen_pred <- function(rep = 1, n){
+  ex <- rnorm(n = n, mean = 5, sd = 3)
+  why <- 2*ex^2 + 5 + rnorm(n = n, mean = 0, sd = 15)
+  preds <- my_preds(ex, why)
+  return(data.frame(ex, why, preds, rep))
+}
+data_gen_pred(n=25)
+```
+
+
+c. Plot the data you generated in the previous step.
+
+```{r}
+set.seed(47)
+d <- data_gen_pred(n=25)
+ggplot(data = d, aes(
+  x = ex,
+  y = why
+)) +
+  geom_point() +
+  geom_line(aes(x = ex, y= preds))
+```
+
+
+d. `map` the function `data_gen_pred` two times with a sample size of 5. After the `map()` command, use `list_rbind()` so that the results are in a data frame.  Your results should be a 10x4 data frame with columns: `ex`, `why`, `preds`, and `rep` (`rep` should be the numbers 1 and 2).
+```{r}
+map(.x = c(1,2), .f = ~ data_gen_pred(rep = .x, n = 5)) |> list_rbind()
+```
+
+
+e. Now the real work!  Create a data frame that `map`s the function `data_gen_pred` 100 times for samples of size 25. Do not print it to screen, instead, save it as an object, `map_results`.
+
+```{r}
+map_results <- map(.x = 1:100, 
+                   .f = ~data_gen_pred(rep = .x, n = 25)) |> 
+  list_rbind()
+```
+
+
+f. Using tidy verbs, calculate the mean squared error for each replicate.  Be careful of your parentheses, your MSE values should be big, not tiny.
+
+```{r}
+#map_results$rep <- as.factor(map_results$rep)
+a <- map_results|> 
+  group_by(rep) |>
+  summarize(mse = mean((preds-why)^2))
+a
+```
+
+
+g. Plot the mean squared error as a function of replicate.  That is `mse` on the y-axis, `rep` on the x-axis.
+
+```{r}
+ggplot(a, aes(x = rep, y = mse)) +
+  geom_point() +
+  scale_x_continuous(breaks = seq(0, 100, by = 10))
+```
+
+

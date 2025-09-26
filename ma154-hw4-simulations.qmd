@@ -1,0 +1,267 @@
+---
+title: "MATH 154 - HW4 - Simulations"
+subtitle: "due on Wednesday, September 24, 2025"
+author: "Wendy Zhang"
+format: pdf
+execute:
+  warning: false
+  message: false
+---
+
+
+```{r}
+#| echo: false
+library(tidyverse)
+```
+
+
+# Introduction
+
+In this assignment, you will think carefully about simulations.  In class, we did a small simulation to find the time when Sally and Joan would meet.  In the notes and slides, there are more extensive simulations on roulette, college admissions, the presidential election, and assessing technical conditions for inference..  Part of the goal of the assignment is to code efficiently and cleanly.  There are times when the most efficient code is difficult to follow.  Your goal should be to create code that is efficient as well as simple to follow.
+
+Other goals of the simulation assignment are to learn to break down a complex problem into simple tasks and to understand how to check that the code you have written is correct.  Running lines one at a time (to understand each line) is an important skill.  Please practice that skill often!
+
+### requisites
+
+Make sure you've read the notes / slides which detail the simulation code.  As we did in class, run the different lines of code one at a time.
+
+You might want to read R for Data Science: [the map functions](https://r4ds.had.co.nz/iteration.html?q=map#the-map-functions).
+
+```{r}
+library(tidyverse)
+```
+
+
+
+### Question 1
+
+**Meeting** (n.b. This problem should feel very similar to the problem in the class notes, but there are a few twists, and also, you get to do the coding!).
+Haven and Kai plan to meet at the Coop Fountain.
+Both are impatient and won't wait more than 10 minutes for the other. 
+However, they didn't specify a time, and simply agreed that they would meet between 8pm and 9pm.  
+
+```{r}
+set.seed(40)
+n_sims <- 100
+arrivals <- data.frame(
+  kai = runif(n_sims, min = 0, max = 60),
+  haven = runif(n_sims, min = 0, max = 60)
+)
+head(arrivals)
+```
+
+(a) Given the `arrivals` data above, write code to estimate the probability of Haven and Kai meeting at the Coop.  How likely is it that they will meet?  [Hint: two of the early data verbs applied to the `arrivals` data frame will serve you well here.]
+
+```{r}
+set.seed(40)
+arrivals |>
+  mutate(diff = abs(kai - haven)) |>
+  summarise(probability = sum(diff <= 10)/100)
+```
+*The probability of them meeting is 0.34.*
+
+(b) What if Kai is known to show up only in increments of 5 min (that is, they would never show up at 8:47pm, only 8:45pm or 8:50pm).  Repeat the simulation to estimate the probability that they will meet.  (Note the `seq()` and `sample()` functions.)
+```{r}
+set.seed(40)
+kaitime <- seq(from = 0, to = 60, by = 5)
+
+arrivalb <- data.frame(
+  Kai = sample(kaitime, 100, replace = TRUE),
+  haven = runif(n_sims, min = 0, max = 60)
+)
+
+arrivalb |>
+  mutate(diff = abs(Kai - haven)) |>
+  summarise(probability = mean(diff <= 10))
+
+```
+*The probability that they will meet is 0.23.*
+
+(c) How many simulations are needed to estimate the true probability?  Let's simulate to find out how variable the simulations are. (Go back to part (a), not part (b), to complete (c) and (d).) 
+  i. First, re-run part (a) with a different `set.seed()`  [did you remember to add `set.seed()` to the code which generates their arrival times in part (a)?  if you didn't, go back and do that now.]  Report the two "meet" percentages with different seeds.  How different are your two meet probabilities?
+
+```{r}
+set.seed(40)
+arrivals |>
+  mutate(diff = abs(kai - haven)) |>
+  summarise(probability47 = mean(diff <= 10))
+
+set.seed(400)
+arrivals |>
+  mutate(diff = abs(kai - haven)) |>
+  summarise(probability48 = mean(diff <= 10))
+```
+*The mean percentages were 0.34 for both seeds.*
+  
+  ii. Repeat the entire simulation 5000 times for each of three values of `sims = 100, 500, 1000`.
+Below is some code which does most of part (c) for you.
+As you fill in the `???`, make sure to run each line of code one at a time.
+In order for the code to compile, you'll need to actually evaluate the code.
+That is, change to `#| eval: true`.
+  
+```{r}
+#| eval: true
+set.seed(40)
+coop_sim <- function(sims = 50) {
+  kai <- runif(sims, min = 0, max = 60) # generate sims number of arrivals
+  haven <- runif(sims, min = 0, max = 60) # generate sims number of arrivals
+  return(
+    data.frame(
+      num_sims = sims,  # keep track of sims
+      meet_prop = mean(abs(kai - haven) <= 10)  # calculate a single number = proportion of times they met
+    )
+  )
+}
+```
+
+Notice how we need to map twice to consider 5000 reps for each of `sims = 100, 500, 1000`!  (For each map, we want a data frame output.  Can use `map_dfr()` or `map() |> list_rbind()` (equivalent!) to make sure that the output is a data.frame.)  
+
+```{r}
+#| eval: true
+set.seed(40)
+reps <- 5000
+coop_results <- 1:reps |>        
+  map(~map_dfr(c(100, 500, 1000), coop_sim)) |> 
+                              
+  list_rbind()
+library(skimr)
+coop_results |>  
+  group_by(num_sims) |>  # hold the data by the groups defined by 100, 500, 1000
+  skimr::skim_without_charts(meet_prop)  # the variable for meeting
+```
+  
+  iii. Write a few sentences describing the simulation results. You might explain the difference between `reps` and `sims`.
+*Regardless of the number of sims, the grand mean is the same after running reps 5000 times. However, the distribution of the mean for each number of sims is different, such that the larger the sample size, the less distributed the means are. Sims describes the sample size for each simulation and reps describes the number of simulation conducted for each given sample size.*
+  
+(d) Graph the `coop_results` output to compare the probability estimates under the three different options for `sims`.  The graph should indicate that across the three different options for `sims`, one aspect of the output is very similar and one aspect of the output is very different.  Include a caption for your graph  (use `#| fig-cap = "here is my caption"` as the first line in the R chunk). I used a density plot, but there are surely other `geom_`s which would also display the results effectively.
+
+```{r}
+#| fig-cap: "Distribution of Probability Meeting for 5000 Simulations of Different Sample Sizes"
+library(ggplot2)
+
+coop_results$num_sims <- as.factor(coop_results$num_sims)
+ggplot(data = coop_results, aes(x = meet_prop, fill = num_sims)) +
+  geom_density(alpha = 0.5) 
+```
+
+
+
+### Question 2
+**type I errors** One of the technical conditions for the t-test is that the data start off as normally distributed.  Using data which are exponentially distributed with a mean of 200 (`rexp(, rate = 1/200)`), use a simulation to assess whether the empirical type 1 error rate (for exponential data) is correct for the set level of significance (e.g., 0.05). 
+
+Repeat the entire analysis for two samples each of size 5 to 50 by units of 5 `seq(from = 5, to = 50, by=5)`).  
+
+The steps of the simulation should be:  
+    (a) (done for you) generate two datasets from the same population with the same sample size.
+    (b) (done for you) perform a `t.test()` to calculate a p-value.  Note, you wouldn't expect to reject the null hypothesis because the two groups of data come from the same population!  (i.e., the null hypothesis is true). 
+    
+What does it mean for a method to be robust to normality?  See Brian Caffo discuss it here: https://www.youtube.com/watch?v=12sjyHGLP2k.  Also, check out the course notes: http://st47s.com/Math154/Notes/sims.html#technical-conditions 
+                                                                     
+
+Below is the function to use to map.  The function includes **both** the data generation and the p-value calculation.  [n.b., previously we created data first and mapped it into a function.  Creating data outside the function is useful to do when we want to keep the data and use it for some reason, maybe to compute residuals, for example.  Here, we don't record any of the data because we just want the p-value.]
+
+    (a) and (b)
+```{r}
+t_test_pval <- function(n_obs){
+  x1 <- rep(c("group1", "group2"), each = n_obs)
+  y <-  rexp(2*n_obs, rate = 1/200) # what is the `rexp()` function?
+  t.test(y ~ x1) |>
+    broom::tidy() |>
+    select(estimate, p.value) |>
+    mutate(n_obs = as.factor(n_obs))  # for graphing, better if not a "number"
+}
+```
+
+(c) use the function to repeat the process many many times (how many?  you'll likely need a few thousand reps) over the range of specified sample sizes.  (use `map_df()` twice just like in the Coop meeting example.)
+
+```{r}
+set.seed(40)
+q2c <- map_df(seq(5, 50, by = 5), function(n){
+  map_df(1:2000, ~t_test_pval(n))
+})
+```
+
+(d) with the calculated p-values, wrangle your data to find out how often you reject (feel free to use a 0.05 level of significance).
+
+```{r}
+q2d <- q2c |> group_by(n_obs) |> summarize(type1error = mean(p.value < 0.05))
+q2d
+```
+
+(e) plot the empirical type I error rate as a function of sample size
+
+```{r}
+#q2e
+library(ggplot2)
+ggplot(data = q2d, aes(x = n_obs, y = type1error, group = 1)) +
+  geom_point() +
+  geom_line() 
+```
+
+(f) Comment on whether the t-test is robust to the condition of underlying normal data.  [If you are curious, you can also investigate the change in mean of the exponential distribution -- more or less skewed.  The skewness also affects the appropriateness of the p-value calculation.]
+
+*The t-test is not robust for small sample sizes like 5 or 10, but robust for larger sample sizes (type 1 error rate becomes stable as the sample size increases). Thus, t-test is robust for non-normally distributed populations when there are large sample sizes, but isn't robust for non-normally distributed populations with small sample sizes.*
+
+### Question 3
+**interval capture rate** Let's say that you want to check the *mathematical formula* for creating CIs for the slope coefficient in a linear model.  In particular, you want to know if the procedure you use actually does capture the population parameter 95% of the time.  You simulate from the following population model (note that $X_1$ is binary and $X_2$ is continuous from -1 to +1):
+
+$$Y = -1 + 0.5 X_1 + 1.5 X_2 + \epsilon, \ \ \ \epsilon \sim N(0,1)$$
+
+Consider:
+
+```{r}
+#| eval: false
+  n_obs <- 100
+  x1 <- rep(c(0,1), each=n_obs/2)
+  x2 <- runif(n_obs, min=-1, max=1)
+  beta0 <- -1; beta1 <- 0.5; beta2 <- 1.5
+  y <- beta0 + beta1*x1 + beta2*x2 + rnorm(n_obs, 0,1)
+```
+
+Nothing for you to do with this graph, it is just here for you to visualize the setting given above.
+
+```{r}
+#| echo: false
+library(tidyverse)
+library(broom)
+set.seed(474)
+n_obs <- 100 
+x1 <- rep(c(0,1), each=n_obs/2)
+x2 <- runif(n_obs, min=-1, max=1)
+
+beta0 <- -1; beta1 <- 0.5; beta2 <- 1.5
+
+y <- beta0 + beta1*x1 + beta2*x2 + rnorm(n_obs, 0, 1)
+
+eqVar <- data.frame(why=y, ex1 = x1, ex2 = x2) 
+
+lm(why ~ ex1 + ex2, data = eqVar) |>
+  augment() |>
+ggplot(aes(x=ex2, y=why, color=as.factor(ex1))) + 
+  geom_point() +
+  geom_line(aes(y = .fitted)) + 
+  scale_color_brewer(palette = "Dark2") +
+  guides(color=guide_legend(title="x1")) +
+  xlab("x2") + ylab("y")
+
+lm(why ~ x1 + x2, data = eqVar) |> tidy(conf.int = TRUE)
+
+
+```
+
+Note that the **estimated** model (estimated from the single observed dataset) is:
+$$\hat{Y} = -0.929 + 0.33 \cdot X_1 + 1.445 \cdot X_2$$
+
+(a) Write down the steps for the simulation that would assess whether the CI procedure is valid for the parameter on $X_2$.
+Do not write any R code here.
+Instead, use words to explain the process.
+
+*Firstly, create the dataframe eqVar many many times to simulate different samples of x1, x2 and y (being a linear combo of x1x2 and epsilon) combinations (to fit the linear model many times). Secondly, identify if the real beta2 (1.5) is captured by the confidence interval associated with each linear model. Thirdly, calculate the proportion of time that the real beta2 is captured by the linear models.*
+
+(b) What is the parameter value that your confidence intervals seek to capture? In answering, report the following: the symbol which represents the value, the actual value of it, and the interpretation in words fo the parameter.
+
+*The true parameter value is 1.5. The symbol is beta2. Interpretation: For each unit increase in X2, when holding X1 constant, the value for Y is expected to increase by 1.5.*
+
+(c) What would you expect your capture rate to be? Explain why. (Refer to the technical conditions associated with a t-test on the linear model coefficients when answering.)
+
+*The capture rate would be 95%. The technical conditions with a t-test are: equal variance and normal distribution in error and random sampling. In this case, errors are generated by using "rnorm(n_obs, 0,1)," which qualifies for a normal distribution with equal variance of 1 and each error is independent. There is a linear relationship between y and X2 because y is generated from a linear combination of X2 (and X1) plus errors, so that X2 and y have a linear relationship. When the technical conditions are met, as conf.int defaults to 95% CI, the capture rate of the parameter within the confidence interval is 95%.*

@@ -1,0 +1,241 @@
+---
+title: "MATH 154 - HW2 - Data Wrangling"
+subtitle: "due on Wednesday, Sep 10, 2025"
+author: "Wendy Zhang"
+format: pdf
+execute:
+  warning: false
+  message: false
+---
+
+```{r}
+#| echo: false
+library(tidyverse)
+library(openintro)
+```
+
+# Introduction
+
+In this assignment we will work with the packages in the **tidyverse** (namely **dplyr** and **tidyr**).
+
+### Question 1
+
+**verbs** Each of the tasks below can be performed using a single data verb. For each task, identify the appropriate verb.
+
+a.  Add a new column that is the sum of two variables
+
+*mutate*
+
+b.  Sort the cases in descending order of a particular variable
+
+*arrange*
+
+c.  Create a new data frame that includes only those cases that meet a particular criterion
+
+*filter*
+
+d.  From a data frame with three categorical variables A, B, & C, and a quantitative variable X, produce an output that has the same cases but only the variables A and X
+
+*select*
+
+e.  Find the average value of one of the variables
+
+*summarize*
+
+### Question 2
+
+The data for the first question come from [FIFA World](https://www.kaggle.com/datasets/evangower/fifa-world-cup) Cup via TidyTuesday. The data include every men's world cup match from 1930 to 2018. You can find a [codebook here](https://github.com/rfordatascience/tidytuesday/tree/master/data/2022/2022-11-29). Use (some of) the 6 verbs (`select()`, `filter()`, `arrange()`, `mutate()`, `summarize()`, `group_by()`) and `ggplot()` to address the following prompts.
+
+```{r}
+world_cup <- read.csv("https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2022/2022-11-29/worldcups.csv")
+
+head(world_cup)
+```
+
+a.  In what years did Brazil win the men's World Cup?
+
+```{r}
+world_cup |> filter(winner == "Brazil")
+```
+
+*Brazil won the world cup in 1958, 1962, 1970, 1994, 2002.*
+
+b.  What were the 6 men's World Cups with the highest attendance?
+
+```{r}
+world_cup |> arrange(desc(attendance)) |> head()
+```
+
+*1994, 2014, 2006, 2016, 1998, 2002.*
+
+c.  Construct a univariate (= **one** variable) plot of `goals_scored` (no wrangling necessary) to provide a visual summary of how the number of `goals_scored` varies from World Cup to World Cup.
+
+```{r}
+library(ggplot2)
+ggplot(data = world_cup, aes(x = goals_scored)) +
+  geom_histogram(binwidth = 10) +
+  xlab("Goals Scored") +
+  ylab("Number of World Cups")
+```
+
+d.  Let's follow up the plot with some more precise numerical summaries. Calculate the min, median, and max number of goals_scored across all men's World Cups.Compare the numerical summaries to what you observed in the plot. Do the values align? Explain what you see in 1-2 sentences.
+
+```{r}
+print(world_cup |> summarise(max(goals_scored)))
+print(world_cup |> summarise(min(goals_scored)))
+print(world_cup |> summarise(median(goals_scored)))
+```
+
+*Yes, the values align. It can be seen in the plot that the maximum goals scored was between 1990 and 2000, with a goal of larger than 150 and less than 175. It can be seen in the plot that the mininum goals scored was between 1925 and 1935, with a goal of between 50 and 75. The medium can't be seen directly from the graph.*
+
+e.  Construct a bivariate plot of how the number of `goals_scored` in the men's World Cup has changed over the years. (No wrangling necessary.)
+
+```{r}
+ggplot(data = world_cup, aes(x = year, y = goals_scored)) +
+  geom_line() +
+  geom_point() +
+  ylab("Goals Scored") +
+  xlab("Year") +
+  ylim(0,200)
+```
+
+f.  The previous plot might be a bit misleading. The number of games played at the men's World Cup varies. Construct a bivariate plot of how the typical number of goals per game has changed over the years. Before plotting, create a new variable called `goals_per_game` (but do *not* create a new object / data frame).
+
+```{r}
+world_cup <- world_cup|> mutate(goals_per_game=goals_scored/games)
+ggplot(data = world_cup, aes(x = year, y = goals_per_game)) +
+  geom_line() +
+  geom_point() +
+  ylab("Goals Scored Per Game") +
+  xlab("Year") +
+  ylim(0,6)
+```
+
+Comment (1-2 sentences) on the new plot. *The new plot provides a clearer message about which world cup had the most goals per game (e.g., how "intriguing" the games were). There is an overall downward trend in terms of the number of goals scored per game as the years progress, with the values before 1960 being centered around 4 and after 1960 being between 2 and 3. The year with the most goals per game was 1954, with more than 5 goals per game on average.*
+
+### Question 3
+
+From TidyTuesday: \> This week we're exploring how global holidays impact seasonal human mobility. We found the data via the article ["Global holiday datasets for understanding seasonal human mobility and population dynamics" by Shengjie Lai (et al)](https://www.nature.com/articles/s41597-022-01120-z).
+
+You can find information about the data and variables on the [TidyTuesday GitHub repo](https://github.com/rfordatascience/tidytuesday/blob/main/data/2024/2024-12-24/readme.md). We will use only the 2018 data.
+
+```{r}
+#| warning: false
+monthly_passengers_2018 <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/main/data/2024/2024-12-24/monthly_passengers.csv') |> 
+  filter(Year == 2018)
+```
+
+a.  Consider each of the following mutated variables. Describe each resulting variable in words. (You will likely need to go to the [TidyTuesday repo](https://github.com/rfordatascience/tidytuesday/blob/main/data/2024/2024-12-24/readme.md) to understand the variables and the observational units).
+
+```{r}
+monthly_passengers_2018 |> 
+  drop_na(International) |> 
+  mutate(q3a.1 = International / sum(International),
+         q3a.2 = (International - mean(International)) / sd(International),
+         q3a.3 = (International - min(International)) / 
+           (max(International) - min(International))
+         ) |> 
+  arrange(desc(International))
+```
+
+*q3a.1 is the proportion/percentage of international airline passengers for each given country and holiday month relative to the total number of passengers traveling in all countries throughout the year.*
+
+*q3a.2 is each observation (i.e., the number of international airline passengers for each country in each holiday month) after being z-scored across all countries.*
+
+*q3a.3 is the min-max normalization of each observation (i.e., the number of international airline passengers for each country in each holiday month) with regards to all countries, where the value is between 0 and 1.*
+
+b.  Notice that the data has now been `group_by()`ed. Consider each of the following mutated variables. Describe each resulting variable in words.
+
+```{r}
+monthly_passengers_2018 |>
+  drop_na(International) |> 
+  group_by(ISO3) |> 
+  mutate(q3b.1 = International / sum(International),
+         q3b.2 = (International - mean(International)) / sd(International),
+         q3b.3 = (International - min(International)) / 
+           (max(International) - min(International))
+         ) |> 
+  arrange(ISO3)
+```
+
+*q3b.1 is the proportion/percentage of international airline passengers for each holiday month relative to the total number of passengers traveling in each country throughout the year.*
+
+*q3a.2 is each observation (i.e., the number of international airline passengers for each country in each holiday month) after being z-scored within each specific country across all months.*
+
+*q3a.3 is the min-max normalization of each observation (i.e., the number of international airline passengers for each country country in each holiday month) with regards to each specific country, where the value is from 0 to 1.*
+
+### Question 4
+
+Use the `flights` data (which is the the R package **nycflights13**).
+
+a.  Which destination shows the greatest variation in air speed in mph? Note that you can see more about the flights data using `?flights` in the Console.
+
+```{r}
+library(nycflights13)
+flights |> 
+  mutate(speed = distance/air_time*60) |>  
+  group_by(dest) |>
+  summarise(variation = sd(speed,na.rm=T)) |>
+  arrange(desc(variation)) |>
+  head(n = 5)
+```
+
+*OKC had the greatest variation.*
+
+b.  Find the top 5 "most reliable" routes (carrier + origin + destination) defined as the highest percentage of flights arriving within 5 minutes of schedule.
+
+```{r}
+flights |> 
+  mutate(ontime = abs(arr_delay)<=5) |>
+  group_by(carrier,origin,dest) |>
+  summarise(flight_num = n(), 
+            percentage = mean(ontime, na.rm=T),
+            .groups="drop") |>
+  filter(flight_num > 50) |>
+  arrange(desc(percentage)) |>
+  head(n = 5)
+```
+
+Hint 1: if you create a TRUE / FALSE variable of whether the flight is on time, the mean of that variable is the proportion of times the carrier + origin + destination is on time.
+
+Hint 2: for part b., only consider those routes that made at least 50 trips.
+
+*WN from LGA to ATL, WN from EWR to BWI, B6 from JFK to BQN, B6 from JFK to ACK, UA from EWR to HNL.*
+
+### Question 5
+
+Consider the `seattlepets` dataset which comes from the **openintro** package. To find out more, type `?seattlepets` into the Console.
+
+a.  Run the following code. What is different from running only `seattlepets` (without the `group_by` action)?
+
+```{r}
+library(openintro)
+
+seattlepets |> 
+  group_by(species, primary_breed)
+```
+
+*Adding and not adding group_by doesn't seem different when printing it out. However, adding group_by will form groups based on the columns specified, such that when adding another verb such as summarize after it, the computation would be conducted within the specified groups rather than across the entire dataframe. In this case, if counting after group_by, it would count the number of pets in each species+primary breed, rather than the number of all pets registered in Seattle.*
+
+b.  What does the following code do? What does the warning message tell you?
+
+```{r}
+#| warning: true
+seattlepets |> 
+  group_by(species, primary_breed) |> 
+  summarize(n())
+```
+
+*The code counts the number of pets after categorized by both their species and primary breed. The warning message tells us that after executing the "summarize" verb, the dataframe will be continued to be grouped by "species" but no longer grouped by primary_breed.*
+
+c.  What does the following code do? Why did the warning message go away?
+
+```{r}
+#| warning: true
+
+seattlepets |> 
+  group_by(species, primary_breed) |> 
+  summarize(n(), .groups = "drop")
+```
+
+*The code does the same as question b, such that it counts the number of pets categorized by both species and primary breed. The warning message go away because the code specified that after executing the "summarize" verb, it wants both groups will be dropped and the dataframe is no longer grouped.*

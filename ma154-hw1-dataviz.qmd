@@ -1,0 +1,273 @@
+---
+title: "MATH 154 - HW1 - Data Viz"
+subtitle: "due on Wednesday, Sep 3, 2025"
+author: "Wendy Zhang"
+format: pdf
+execute:
+  warning: false
+  message: false
+---
+
+```{r}
+#| echo: false
+library(tidyverse)
+library(ggplot2)
+```
+
+
+# Introduction
+
+In this assignment, you will think carefully about graphics and visualization.  You will use `ggplot()` to create graphics, and you will think about aspects of visualizations that work well or don't work well.
+
+### Question 1
+
+**Ledecky the GOAT** Look at the data visualization titled **Total meters swum in Olympic medal events** in the New York Times article at https://www.nytimes.com/interactive/2024/07/31/sports/olympics/katie-ledecky-us-olympics-swimming.html. (If you don't have easy access to the NYT, you can get it through the Claremont Colleges library: https://libguides.libraries.claremont.edu/newspapers/nytimes).  
+
+
+a. List all of the variables being displayed in the graphic, along with the units and a few typical values for each. N.b., a variable is a column in a dataset.  Here, the likely dataset is defined with each row being a different Olympic swimming race.
+
+*(1) Medal Type: Gold, Silver, Bronze*
+*(2) Distance of Race (meters in freestyle): 800, 1500*
+*(3) Athlete: Ledecky, Torres, Thompson*
+*(4) Olympic Game (Year): London 2012, Rio 2016*
+
+
+b. What are the visual cues used in the data graphic to convey information.  Explain how each visual cue is linked to each variable. (Visual cues are: position, length, angle, direction, shape, area, volume, shade, and color.  See: https://st47s.com/Math154/Notes/02-viz.html#deconstruct)
+
+*Position: Each individual data point of individual distance swum at an Olympic Game event is first categorized by athlete and positioned horizontally, then positioned vertically ordered first by year of Olympic games.*
+
+*Length: Length is lined to the variable Distance of Race, such that longer length of the data point proportionally represent longer distance swum in a given event.*
+
+*Angle: There is no rotation between vectors. Each vector of an individual athlete is parallel to each other to visually represent the difference in total distance swum in Olympic Games.*
+
+*Direction: The data points are stacked vertically 90 degrees to visually maximize the total sum of Distance for each athlete.*
+
+*Shape: Shape is not used in the graph.*
+
+*Area: The area of rectangle for each athlete represent the their total distance swum in all Olympic Games. Area is linked to the sum of the variable Distance of Race.*
+
+*Volume: The graph is 2D. Volume is not used in this case.*
+
+*Shade: There is only one shade of each color. The only exception is gray (linked to Medal Type), with light gray representing "No Medal" and dark gray representing "Silver." *
+
+*Color: Color is linked to Medal Type, with four colors representing Gold, Silver, Bronze, and No Medal.*
+
+c. What is the graphic trying to show?
+
+*The graphic is trying to show the total distance swum by each famous swimmer at the Olympic Games finals, emphasizing how impressive Ledecky's performance is across different Olympic Games and races, compared to other US swimming legends.*
+
+d. List the characteristics about the graphic that make the message easier to understand.  
+
+*The graphic used length to represent the total distance swum by each athlete, which is very straightforward to understand visually. The graphic's color coding for the type of medal won also visually showed the performance of each race.*
+
+e. List the characteristics about the graphic that make the message harder to understand.
+
+*I didn't understand if all other three swimmers' data point all came from the London Olympics, as only Ledecky's column was divided by years. Only 800 and 1500 meters freestyle was labeled, and no other events was lebeled so it was relatively difficult to tell the distance.*
+
+
+### Question 2
+
+**High Peaks** Consider [hiking data](https://www.key2stats.com/data-set/view/835) of the 46 "High Peaks" in the Adirondack mountains.  Let's figure out how many hikes fall into each of the difficulty levels: 1 (easy) to 7 (most difficult).  I've written code for you to import the data.  We'll focus on making bar plots of different varieties. For each of the 
+
+```{r}
+highpeaks <- read_csv("https://www.key2stats.com/Characteristics_of_Adirondack_Hiking_Trails_835_51.csv") |> 
+  mutate(Time = as.factor(Time))
+```
+
+
+Start with a base ggplot.  Nothing for you to do here.
+
+```{r}
+ggplot(highpeaks, aes(x = Difficulty))
+```
+
+Next, for the following five R chunks and corresponding graphs, comment on the change in the code and the corresponding change in the plot.
+
+a. comment on the change in the code and the corresponding change in the plot.
+
+*geom_bar() was added to indicate the type of graph it wanted to plot with Difficulty as the factor. The plot now plots the values of Difficulty as a bar plot.*
+
+```{r}
+ggplot(highpeaks, aes(x = Difficulty)) +
+  geom_bar()
+```
+
+b. comment on the change in the code and the corresponding change in the plot.
+
+*The code added fill="blue" to specify the color of the filling of the bars, and added labs(y="Number of hikes") to specify the y-axis label. The plot now has a y-axis labeled "Number of hikes" and the bars are blue.*
+
+```{r}
+ggplot(highpeaks, aes(x = Difficulty)) +
+  geom_bar(fill = "blue") +
+  labs(x = "Difficulty", y = "Number of hikes")
+```
+
+c. comment on the change in the code and the corresponding change in the plot.
+
+*The code added "color='orange'" to specify the color of the outline of the bars. The outlines of the bars are now orange.*
+
+```{r}
+ggplot(highpeaks, aes(x = Difficulty)) +
+  geom_bar(color = "orange", fill = "blue") +
+  labs(x = "Difficulty", y = "Number of hikes")
+```
+
+d. comment on the change in the code and the corresponding change in the plot.
+
+*The code added theme_minimal() and the plot now has no background color (before the background was gray).*
+
+```{r}
+ggplot(highpeaks, aes(x = Difficulty)) +
+  geom_bar(color = "orange", fill = "blue")  +
+  labs(x = "Difficulty", y = "Number of hikes") +
+  theme_minimal()
+```
+
+e. comment on the change in the code and the corresponding change in the plot.
+
+*The code added "fill = Time" in aes, adding the factor Time to be represented as different colors within each bar. The plot now has different colors representing the time it takes to complete the hike of each difficulty level.*
+
+```{r}
+ggplot(highpeaks, aes(x = Difficulty, fill = Time)) +
+  geom_bar(color = "black") +
+  labs(x = "Difficulty", y = "Number of hikes") +
+  theme_minimal()
+```
+
+
+
+
+
+### Question 3
+
+**Find a Dataset** Using any dataset you find online, create a figure using `ggplot()`.  Ideally, you should be able to link directly to the dataset, and not have to download the data.  If you do need to download the data, make sure it is saved into your GitHub repo so that your Quarto file can Render reproducibly for a collaborator. 
+
+  * The plot must have at least 2 `aes`thetics.
+  * The plot must use at least two different `geom`s.
+  * You might consider `facet`ing the plot according to a categorical variable.
+  * Be sure to provide the source of your data and information on the variables (a few sentences).
+
+::: callout-note
+Lots of data links here: [https://hardin47.netlify.app/courses/data-sources/](https://hardin47.netlify.app/courses/data-sources/)  
+
+You might want to look at all the different `geom`s:
+[https://ggplot2.tidyverse.org/reference/index.html#geoms](https://ggplot2.tidyverse.org/reference/index.html#geoms)
+:::
+
+::: callout-important
+The package `readr`  (which lives inside the package `tidyverse`) can seamlessly read in most files / URLs. Hint:  click on `Import Dataset` at the top right of the RStudio screen and use the GUI to help you figure out the correct code.  [I'm serious about using the `Import Dataset` button to help you figure out what code goes into the .qmd file, ask me if it isn't obvious after you try it out.]
+:::
+
+::: callout-tip
+# Example
+If you go here: [https://dasl.datadescription.com/](https://dasl.datadescription.com/), you can download the data as:
+
+```{r}
+amazon <- readr::read_delim("https://dasl.datadescription.com/download/data/3052/amazon-books.txt", 
+                            delim = "\t", escape_double = FALSE, trim_ws = TRUE)
+glimpse(amazon)
+```
+:::
+
+
+*The source of the data is the tidytuesday 2023/4/25 dataset on London Marathon, specifically the dataset of winners each year. The variable "Category" describes the category the winner is in (i.e., Men, Women, Wheelchair Men, Wheelchair Women). The variable "Time" is the time each winner finished the marathon. The variable "Year" is the year the marathon took place.*
+```{r}
+london_marathon <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/main/data/2023/2023-04-25/london_marathon.csv')
+winners <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/main/data/2023/2023-04-25/winners.csv')
+
+winners %>% filter (Year >1985) %>%
+  ggplot(aes(x = Year, y = Time, color = Category)) +
+  geom_point() +
+  geom_line() +
+  labs (title = "London Marathon Winner Finishing Times",
+        color = "Category") +
+  theme_minimal()
+```
+
+
+### Question 4
+
+**Olympic athletes and medals** gives basic biographical data on athletes and medal results from Athens 1896 to Rio 2016.
+
+See the associated TidyTuesday GitHub repo here: [https://github.com/rfordatascience/tidytuesday/blob/master/data/2024/2024-05-14/readme.md](https://github.com/rfordatascience/tidytuesday/blob/master/data/2024/2024-05-14/readme.md)
+
+```{r}
+olympics <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2024/2024-08-06/olympics.csv')
+
+olympics
+```
+
+a. Create a single plot using as many variables as you can (you should be able to use at least 5 variables). [Note: this is *not* good graphical practice, you are likely to create a terrible graph! The assignment is merely an exercise to help you understand how to use visual cues and aesthetics!]
+```{r}
+olympics %>%
+  filter(!is.na(medal))%>%
+  group_by(year, sex, season) %>%
+  summarise(
+    medal_count = n(),               
+    average_age = mean(age, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+ggplot(aes(
+    x = year,
+    y = medal_count,
+    color = sex,
+    size = average_age
+  )) +
+  geom_point() +
+  facet_wrap(~ season) +
+  theme_minimal() +
+  labs(
+    title = "Gender and Age Shift in Olympics Medals",
+    x = "Year",
+    y = "Number of Medals",
+    color = "Gender",
+    size = "Average Age"
+  )
+
+```
+
+  
+b. Again, using the Olympics data, create a single plot which is terrible.  The worse the plot, the better.  Include the worst plot you create.  Explain why you think the graph is terrible.
+
+*This is a terrible graph because the x axis is a categorical variable with many different values, resulting in the x axis to be unreadable. This plot counts how many athletes there are for each sport event across all Olympic games for different genders. Because there are events with both male and female athletes, there are overlapping bars with unreadable labels, so it's difficult to tell what the events are. None of the labels were changed as well.*
+```{r}
+ggplot(olympics, aes(x = event, color = sex)) +
+  geom_bar(fill = "white")
+  
+```
+
+c. Again, using the Olympics data, create a single plot that you like.  
+      * Provide a few sentences interpreting what the plot shows - as if for a figure caption. 
+      
+      *The barplot shows the number of Boxing medals for males and females at the Olympics across the years.*
+      
+      * Provide a few sentences interpreting what the plot shows - as if for a screen reader or an individual who wasn't actually looking at the image (this is called alt text). Note that with alt text, you begin your description with the type of plot.  For example, you might say, "A boxplot with ... on the x-axis and ... on the y-axis.  The main trend is to show that..."
+      
+      *A barplot with Year on the x-axis and Count of Boxing Medals on the y-axis. Bar colors represent the gender distribution of medals for each Olympic game. The main trend is to show that while the number of boxing medals increases throughout the years, females were only able to win Boxing medals until after the 2000s.*
+
+```{r}   
+olympics %>% filter(sport=="Boxing",!is.na(medal)) %>%
+  ggplot(aes(x = year, fill = sex)) +
+  geom_bar() +
+  theme_minimal() +
+  labs (title = "Boxing Medal Counts by Gender",
+        x = "Year",
+        y = "Count of Boxing Medals",
+        fill = "Gender")
+```
+
+::: callout-note
+# filter the data?
+
+You might want to filter the data first to look at a subset.  For example, let's say you want to consider only Kenyan and Norwegian athletes.  (We'll cover filtering next week when we start wrangling.)
+
+```{r}
+subset_olympics <- olympics |> 
+  dplyr::filter(team %in% c("Kenya", "Norway"))
+```
+:::
+
+
+d. Why would it be a good idea or a bad idea to use the variable `sport` in your plot? Explain.
+
+*It would be a bad idea to use the variable `sport` in the plot because there are many different sports listed, which would result in the plot to be difficult to read. It would be better to use the variable sport when filtering for only a few sports (e.g., individual ball games).*
